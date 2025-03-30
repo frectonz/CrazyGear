@@ -45,8 +45,8 @@ enum class GameState {
 
 // --- Game Constants ---
 const val GRAVITY = 9.8f * 150f
-const val HORIZONTAL_IMPULSE = 550f
-const val VERTICAL_JUMP_IMPULSE = -650f
+const val HORIZONTAL_IMPULSE = 300f
+const val VERTICAL_JUMP_IMPULSE = -300f
 const val FRICTION_FACTOR = 0.98f
 val GEAR_RADIUS = 20.dp
 
@@ -103,19 +103,19 @@ fun GearGame() {
         var score by remember { mutableIntStateOf(0) }
 
         // Function to reset the game state
-        fun resetGame() {
+        fun resetGame(state: GameState) {
             gearPosition = Offset(screenWidthPx / 2f, screenHeightPx / 2f + gearRadiusPx * 4)
             gearVelocity = Offset.Zero
             obstacles.clear()
             lastSpawnTime = 0L // Reset spawn timer
-            gameState = GameState.NotStarted
+            gameState = state
             score = 0
         }
 
         // Initialize gear position correctly once dimensions are known
         LaunchedEffect(screenWidthPx, screenHeightPx) {
             if (gearPosition == Offset.Zero) {
-                resetGame()
+                resetGame(GameState.NotStarted)
             }
         }
 
@@ -135,7 +135,7 @@ fun GearGame() {
                     }
 
                     GameState.GameOver -> {
-                        resetGame()
+                        resetGame(GameState.Running)
                     }
 
                     GameState.NotStarted -> {}
@@ -273,7 +273,7 @@ fun GearGame() {
                         center = gearPosition, radius = gearRadiusPx, color = Color.Black
                     )
                 }
-            } // End of Canvas
+            }
 
             // Draw Score
             Box(
@@ -289,8 +289,6 @@ fun GearGame() {
                     color = Color.Black
                 )
             }
-
-
         }
 
         // --- Game Over UI ---
