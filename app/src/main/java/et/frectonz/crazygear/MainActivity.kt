@@ -9,8 +9,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -26,6 +29,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,8 +40,7 @@ import kotlin.random.Random
 
 // --- Game State Enum ---
 enum class GameState {
-    Running,
-    GameOver
+    Running, GameOver, NotStarted
 }
 
 // --- Game Constants ---
@@ -45,7 +48,7 @@ const val GRAVITY = 9.8f * 150f
 const val HORIZONTAL_IMPULSE = 550f
 const val VERTICAL_JUMP_IMPULSE = -650f
 const val FRICTION_FACTOR = 0.98f
-val GEAR_RADIUS = 30.dp
+val GEAR_RADIUS = 20.dp
 
 // --- Obstacle Constants ---
 const val OBSTACLE_FALL_SPEED = 220f
@@ -92,7 +95,7 @@ fun GearGame() {
         val obstacleWidthMaxPx = remember { OBSTACLE_WIDTH_MAX.toPx(density) }
 
         // --- State Variables ---
-        var gameState by remember { mutableStateOf(GameState.Running) }
+        var gameState by remember { mutableStateOf(GameState.NotStarted) }
         var gearPosition by remember { mutableStateOf(Offset.Zero) }
         var gearVelocity by remember { mutableStateOf(Offset.Zero) }
         val obstacles = remember { mutableStateListOf<Obstacle>() }
@@ -105,7 +108,7 @@ fun GearGame() {
             gearVelocity = Offset.Zero
             obstacles.clear()
             lastSpawnTime = 0L // Reset spawn timer
-            gameState = GameState.Running
+            gameState = GameState.NotStarted
             score = 0
         }
 
@@ -134,6 +137,8 @@ fun GearGame() {
                     GameState.GameOver -> {
                         resetGame()
                     }
+
+                    GameState.NotStarted -> {}
                 }
             }
         }
@@ -184,7 +189,6 @@ fun GearGame() {
 
                 // Spawn...
                 if (currentTimeMillis - lastSpawnTime > OBSTACLE_SPAWN_DELAY_MS) {
-                    println("spawn")
                     val newObstacleWidth =
                         Random.nextFloat() * (obstacleWidthMaxPx - obstacleWidthMinPx) + obstacleWidthMinPx
                     val newObstacleX = Random.nextFloat() * (screenWidthPx - newObstacleWidth)
@@ -209,8 +213,7 @@ fun GearGame() {
                         iterator.set(
                             obstacle.copy(
                                 position = Offset(
-                                    obstacle.position.x,
-                                    newObstacleY
+                                    obstacle.position.x, newObstacleY
                                 )
                             )
                         )
@@ -230,44 +233,64 @@ fun GearGame() {
             }
         } // End of Game Loop LaunchedEffect
 
-        // --- Drawing ---
-
-
-        Canvas(modifier = Modifier
-            .fillMaxSize()
-            .then(inputModifier)) {
-            // Draw Obstacles
-            obstacles.forEach { obstacle ->
-                drawRect(
-                    color = obstacle.color,
-                    topLeft = obstacle.position,
-                    size = obstacle.size
+        if (gameState === GameState.NotStarted) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "CRAZY\nGEAR",
+                    fontSize = 70.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 60.sp
                 )
+                Spacer(modifier = Modifier.height(50.dp))
+                Button(onClick = { gameState = GameState.Running }) {
+                    Text(text = "PLAY", fontSize = 24.sp)
+                }
             }
+        }
 
-            // Draw Gear
-            if (gameState == GameState.Running) {
-                drawGear(
-                    center = gearPosition,
-                    radius = gearRadiusPx,
+        if (gameState === GameState.Running || gameState === GameState.GameOver) {
+            // --- Drawing ---
+            Canvas(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .then(inputModifier)
+            ) {
+                // Draw Obstacles
+                obstacles.forEach { obstacle ->
+                    drawRect(
+                        color = obstacle.color, topLeft = obstacle.position, size = obstacle.size
+                    )
+                }
+
+                // Draw Gear
+                if (gameState == GameState.Running) {
+                    drawGear(
+                        center = gearPosition, radius = gearRadiusPx, color = Color.Black
+                    )
+                }
+            } // End of Canvas
+
+            // Draw Score
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp), // Optional padding to avoid touching the edges
+                contentAlignment = Alignment.TopEnd
+            ) {
+                Text(
+                    text = score.toString(),
+                    fontSize = 48.sp,
+                    fontWeight = FontWeight.Bold,
                     color = Color.Black
                 )
             }
-        } // End of Canvas
 
-        // Draw Score
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp), // Optional padding to avoid touching the edges
-            contentAlignment = Alignment.TopEnd
-        ) {
-            Text(
-                text = score.toString(),
-                fontSize = 48.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
+
         }
 
         // --- Game Over UI ---
