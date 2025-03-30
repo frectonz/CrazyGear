@@ -1,0 +1,27 @@
+# IDE-specific files
+*.iml
+.idea/
+.DS_Store
+
+# Gradle files
+.gradle/
+local.properties
+
+# Build output
+/build/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Dependency caches
+.gradle/
+**/build/
+
+# Keystore files (security risk if committed)
+*.jks
+*.keystore
+
+# Miscellaneous
+*.log
+*.apk
+*.aab
