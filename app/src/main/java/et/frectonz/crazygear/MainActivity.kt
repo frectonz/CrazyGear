@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -96,6 +97,7 @@ fun GearGame() {
         var gearVelocity by remember { mutableStateOf(Offset.Zero) }
         val obstacles = remember { mutableStateListOf<Obstacle>() }
         var lastSpawnTime by remember { mutableLongStateOf(0L) }
+        var score by remember { mutableIntStateOf(0) }
 
         // Function to reset the game state
         fun resetGame() {
@@ -104,6 +106,7 @@ fun GearGame() {
             obstacles.clear()
             lastSpawnTime = 0L // Reset spawn timer
             gameState = GameState.Running
+            score = 0
         }
 
         // Initialize gear position correctly once dimensions are known
@@ -127,6 +130,7 @@ fun GearGame() {
                             Offset(HORIZONTAL_IMPULSE, jumpVelocityY)
                         }
                     }
+
                     GameState.GameOver -> {
                         resetGame()
                     }
@@ -162,7 +166,9 @@ fun GearGame() {
                     gameState = GameState.GameOver
                 } else if (nextY < gearRadiusPx) {
                     nextY = gearRadiusPx
-                    if (gearVelocity.y < 0) { gearVelocity = gearVelocity.copy(y = 0f) }
+                    if (gearVelocity.y < 0) {
+                        gearVelocity = gearVelocity.copy(y = 0f)
+                    }
                 }
                 if (nextX < gearRadiusPx) {
                     nextX = gearRadiusPx
@@ -179,9 +185,11 @@ fun GearGame() {
                 // Spawn...
                 if (currentTimeMillis - lastSpawnTime > OBSTACLE_SPAWN_DELAY_MS) {
                     println("spawn")
-                    val newObstacleWidth = Random.nextFloat() * (obstacleWidthMaxPx - obstacleWidthMinPx) + obstacleWidthMinPx
+                    val newObstacleWidth =
+                        Random.nextFloat() * (obstacleWidthMaxPx - obstacleWidthMinPx) + obstacleWidthMinPx
                     val newObstacleX = Random.nextFloat() * (screenWidthPx - newObstacleWidth)
-                    val newObstacleColor = if (Random.nextBoolean()) Color(0xFFE57373) else Color(0xFF81D4FA) // Red or Blue
+                    val newObstacleColor =
+                        if (Random.nextBoolean()) Color(0xFFE57373) else Color(0xFF81D4FA) // Red or Blue
                     obstacles.add(
                         Obstacle(
                             position = Offset(newObstacleX, -obstacleHeightPx),
@@ -198,16 +206,23 @@ fun GearGame() {
                     val obstacle = iterator.next()
                     val newObstacleY = obstacle.position.y + OBSTACLE_FALL_SPEED * dt
                     if (newObstacleY < screenHeightPx + obstacleHeightPx * 2) {
-                        iterator.set(obstacle.copy(position = Offset(obstacle.position.x, newObstacleY)))
+                        iterator.set(
+                            obstacle.copy(
+                                position = Offset(
+                                    obstacle.position.x,
+                                    newObstacleY
+                                )
+                            )
+                        )
                     } else {
                         iterator.remove()
+                        score += 1
                     }
                 }
 
                 // --- Collision Detection ---
                 // Removed gearBounds calculation here as it's not needed for the improved check below
                 obstacles.forEach { obstacle ->
-                    // *** FIX: Pass arguments needed by checkCircleRectOverlap (Line ~225) ***
                     if (checkCircleRectOverlap(gearRadiusPx, gearPosition, obstacle.bounds)) {
                         gameState = GameState.GameOver
                     }
@@ -216,7 +231,11 @@ fun GearGame() {
         } // End of Game Loop LaunchedEffect
 
         // --- Drawing ---
-        Canvas(modifier = Modifier.fillMaxSize().then(inputModifier)) {
+
+
+        Canvas(modifier = Modifier
+            .fillMaxSize()
+            .then(inputModifier)) {
             // Draw Obstacles
             obstacles.forEach { obstacle ->
                 drawRect(
@@ -235,6 +254,21 @@ fun GearGame() {
                 )
             }
         } // End of Canvas
+
+        // Draw Score
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp), // Optional padding to avoid touching the edges
+            contentAlignment = Alignment.TopEnd
+        ) {
+            Text(
+                text = score.toString(),
+                fontSize = 48.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black
+            )
+        }
 
         // --- Game Over UI ---
         if (gameState == GameState.GameOver) {
@@ -262,7 +296,6 @@ fun GearGame() {
     } // End of BoxWithConstraints
 }
 
-// *** FIX: Remove unused circleBounds parameter (Line ~275) ***
 fun checkCircleRectOverlap(circleRadius: Float, circleCenter: Offset, rectBounds: Rect): Boolean {
     val closestX = clamp(circleCenter.x, rectBounds.left, rectBounds.right)
     val closestY = clamp(circleCenter.y, rectBounds.top, rectBounds.bottom)
@@ -294,7 +327,12 @@ fun DrawScope.drawGear(
     val angleStep = (2 * PI / teethCount).toFloat()
     drawCircle(color, radius = innerRadius, center = center, style = Stroke(width = radius * 0.1f))
     drawCircle(color = Color.White, radius = radius * 0.3f, center = center)
-    drawCircle(color = color, radius = radius * 0.3f, center = center, style = Stroke(width = radius * 0.05f))
+    drawCircle(
+        color = color,
+        radius = radius * 0.3f,
+        center = center,
+        style = Stroke(width = radius * 0.05f)
+    )
     for (i in 0 until teethCount) {
         val angle = i * angleStep
         val startX = center.x + innerRadius * cos(angle)
