@@ -107,7 +107,7 @@ fun GearGame() {
             gearPosition = Offset(screenWidthPx / 2f, screenHeightPx / 2f + gearRadiusPx * 4)
             gearVelocity = Offset.Zero
             obstacles.clear()
-            lastSpawnTime = 0L // Reset spawn timer
+            lastSpawnTime = 0L
             gameState = state
             score = 0
         }
@@ -148,7 +148,6 @@ fun GearGame() {
             if (gameState != GameState.Running) return@LaunchedEffect
 
             var lastFrameTime = System.nanoTime()
-            // *** NOTE: Error on Line 67 is likely before this loop starts or unrelated to it ***
             while (gameState == GameState.Running) {
                 val currentNanoTime = awaitFrame()
                 val currentTimeMillis = currentNanoTime / 1_000_000
@@ -279,7 +278,7 @@ fun GearGame() {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp), // Optional padding to avoid touching the edges
+                    .padding(16.dp),
                 contentAlignment = Alignment.TopEnd
             ) {
                 Text(
@@ -314,7 +313,7 @@ fun GearGame() {
                 )
             }
         }
-    } // End of BoxWithConstraints
+    }
 }
 
 fun checkCircleRectOverlap(circleRadius: Float, circleCenter: Offset, rectBounds: Rect): Boolean {
@@ -331,11 +330,10 @@ fun clamp(value: Float, min: Float, max: Float): Float {
     return max(min, min(value, max))
 }
 
-
 // Helper function to convert DP to Pixels
 fun Dp.toPx(density: Float): Float = this.value * density
 
-// Gear Drawing Function (same as before)
+// Gear Drawing Function
 fun DrawScope.drawGear(
     center: Offset,
     radius: Float,
@@ -343,7 +341,6 @@ fun DrawScope.drawGear(
     teethCount: Int = 8,
     toothHeight: Float = radius * 0.25f
 ) {
-    // ... (drawing code remains the same) ...
     val innerRadius = radius - toothHeight
     val angleStep = (2 * PI / teethCount).toFloat()
     drawCircle(color, radius = innerRadius, center = center, style = Stroke(width = radius * 0.1f))
